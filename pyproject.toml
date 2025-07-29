@@ -1,0 +1,16 @@
+[project]
+name = "MLDataPreparer"
+version = "0.1.0"
+description = "Automated data preprocessing for machine learning"
+authors = [
+  {name = "Sorrger", email = "Sorrger@gmail.com"},
+  {name = "Dawid Polczyk", email = "dp306686@student.polsl.pl"}
+]
+dependencies = [
+  "pandas",
+  "numpy"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
