@@ -1,4 +1,5 @@
-from typing import Optional
+from os import name
+from typing import Optional, Dict
 import pandas as pd
 
 def load_csv(
@@ -44,34 +45,21 @@ def preview_dataframe(
 
 def get_dataframe_stat_summary(
         df: pd.DataFrame
-) -> pd.DataFrame:
-    """ Return summary statistics and structure of a DataFrame.
-
-    Args:
-        df (pd.DataFrame): _description_
-
-    Raises:
-        NotImplementedError: _description_
-
-    Returns:
-        pd.DataFrame: _description_
-    """
-    raise NotImplementedError()
+) -> Dict[str, object]:
+    """Return summary statistics and structure of a DataFrame."""
+    return {
+        "row_count": df.shape[0],
+        "column_count": df.shape[1],
+        "missing_values": df.isna().sum().to_dict()
+    }
+    
 
 def set_column_names(df: pd.DataFrame, names: list[str]) -> pd.DataFrame:
-    """Manually set column names in a DataFrame.
-
-    Args:
-        df (pd.DataFrame): _description_
-        names (list[str]): _description_
-
-    Raises:
-        NotImplementedError: _description_
-
-    Returns:
-        pd.DataFrame: _description_
-    """
-    raise NotImplementedError()
+    """Manually set column names in a DataFrame."""
+    if df.shape[1] != len(names):
+        raise ValueError("Number of names doesn't match")
+    df.columns = names 
+    return df
 
 def validate_csv_format(filepath: str, expected_cols: Optional[int] = None) -> bool:
     """Check basic integrity of a CSV file before loading.
