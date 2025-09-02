@@ -1,11 +1,12 @@
+from typing import Optional
 import pandas as pd
 
 def load_csv(
         filepath: str,
         sep: str = ",",
-        header: int | None = 0,
+        header: Optional[int] = 0,
         encoding: str = "utf-8",
-        na_values: list[str] | None = None
+        na_values: Optional[list[str]] = None
 ) -> pd.DataFrame:
     """Load a CSV file into a pandas DataFrame.
 
@@ -22,7 +23,22 @@ def load_csv(
     Returns:
         pd.DataFrame: _description_
     """
-    raise NotImplementedError()
+
+    try:
+        df = pd.read_csv(
+            filepath,
+            sep = sep,
+            header = header,
+            encoding = encoding,
+            na_values = na_values
+        )
+        if df.empty:
+            raise ValueError("CSV file is empty")
+        return df
+    
+    except FileNotFoundError:
+        raise FileNotFoundError("File not found")
+    #Need to add more excepts
 
 
 def preview_dataframe(
@@ -77,7 +93,7 @@ def set_column_names(df: pd.DataFrame, names: list[str]) -> pd.DataFrame:
     """
     raise NotImplementedError()
 
-def validate_csv_format(filepath: str, expected_cols: int | None = None) -> bool:
+def validate_csv_format(filepath: str, expected_cols: Optional[int] = None) -> bool:
     """Check basic integrity of a CSV file before loading.
 
     Args:
