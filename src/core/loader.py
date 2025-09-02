@@ -62,16 +62,24 @@ def set_column_names(df: pd.DataFrame, names: list[str]) -> pd.DataFrame:
     return df
 
 def validate_csv_format(filepath: str, expected_cols: Optional[int] = None) -> bool:
-    """Check basic integrity of a CSV file before loading.
+    """Check basic integrity of a CSV file before loading."""
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            if not first_line:
+                raise ValueError("CSV file is empty")
 
-    Args:
-        filepath (str): _description_
-        expected_cols (int | None, optional): _description_. Defaults to None.
+            cols = first_line.split(",")
+            if expected_cols is not None and len(cols) != expected_cols:
+                raise ValueError("Wrong number of columns")
 
-    Raises:
-        NotImplementedError: _description_
+            for line in f:
+                values = line.strip().split(",")
+                if expected_cols is not None and len(values) != expected_cols:
+                    raise ValueError(
+                        f"Inconsistent column number in row: {line.strip()}"
+                    )
 
-    Returns:
-        bool: _description_
-    """
-    raise NotImplementedError()
+        return True
+    except FileNotFoundError:
+        raise FileNotFoundError("File not found")
