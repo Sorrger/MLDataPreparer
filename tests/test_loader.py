@@ -10,15 +10,15 @@ from src.core.loader import (
 )
 
 
-# Fixtures
+# --- Fixtures ----------------------------------------------------------------
 
 @pytest.fixture
 def simple_df():
     """A small reusable DataFrame for preview and summary tests."""
-    return pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
+    return pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, None]})
 
 
-# load_csv tests
+# --- load_csv tests -----------------------------------------------------------
 
 def test_load_csv_when_file_is_valid(tmp_path):
     """load_csv should correctly read a valid CSV file with default separator."""
@@ -31,6 +31,7 @@ def test_load_csv_when_file_is_valid(tmp_path):
     assert df.shape == (2, 2)
     assert list(df.columns) == ["name", "age"]
     assert df.iloc[0]["name"] == "Alice"
+    assert df["age"].dtype == "int64"
 
 
 def test_load_csv_when_file_is_missing():
@@ -94,15 +95,13 @@ def test_load_csv_with_invalid_encoding(tmp_path):
     """load_csv should raise UnicodeDecodeError if encoding is wrong."""
     file = tmp_path / "test.csv"
     content = "name,age\nAlice,30\nBob,25"
-    # Save as utf-16
     file.write_bytes(content.encode("utf-16"))
 
-    # Try to read as utf-8
     with pytest.raises(UnicodeDecodeError):
         load_csv(str(file), encoding="utf-8")
 
 
-# preview_dataframe tests
+# --- preview_dataframe tests --------------------------------------------------
 
 def test_preview_dataframe_head(simple_df):
     """preview_dataframe should return the first N rows when tail=False."""
@@ -116,7 +115,7 @@ def test_preview_dataframe_tail(simple_df):
     assert preview.equals(simple_df.tail(2))
 
 
-# get_dataframe_stat_summary tests
+# --- get_dataframe_stat_summary tests ----------------------------------------
 
 def test_get_dataframe_stat_summary_returns_expected_keys(simple_df):
     """get_dataframe_stat_summary should return dict with row/column count and missing values."""
@@ -124,10 +123,10 @@ def test_get_dataframe_stat_summary_returns_expected_keys(simple_df):
     assert isinstance(summary, dict)
     assert summary["row_count"] == 3
     assert summary["column_count"] == 2
-    assert "missing_values" in summary
+    assert summary["missing_values"] == {"a": 0, "b": 1}
 
 
-# set_column_names tests
+# --- set_column_names tests --------------------------------------------------
 
 def test_set_column_names_updates_columns():
     """set_column_names should replace DataFrame column names with provided list."""
@@ -137,7 +136,15 @@ def test_set_column_names_updates_columns():
     assert list(df2.columns) == new_names
 
 
-# validate_csv_format tests
+def test_set_column_names_with_mismatched_length():
+    """set_column_names should raise ValueError if number of names != number of columns."""
+    df = pd.DataFrame([[1, 2], [3, 4]])
+    new_names = ["only_one"]
+    with pytest.raises(ValueError):
+        set_column_names(df, new_names)
+
+
+# --- validate_csv_format tests -----------------------------------------------
 
 def test_validate_csv_format_when_file_is_correct(tmp_path):
     """validate_csv_format should return True for well-formed CSV with expected columns."""
@@ -152,3 +159,10 @@ def test_validate_csv_format_when_columns_are_incorrect(tmp_path):
     file.write_text("col1,col2\n1,2,3")
     with pytest.raises(ValueError):
         validate_csv_format(str(file), expected_cols=2)
+
+
+def test_validate_csv_format_with_no_expected_cols(tmp_path):
+    """validate_csv_format should succeed when expected_cols is None."""
+    file = tmp_path / "valid.csv"
+    file.write_text("col1,col2\n1,2\n3,4")
+    assert validate_csv_format(str(file))
