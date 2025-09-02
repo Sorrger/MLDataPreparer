@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import pandas as pd
 
 def load_csv(
@@ -6,7 +6,7 @@ def load_csv(
         sep: str = ",",
         header: Optional[int] = 0,
         encoding: str = "utf-8",
-        na_values: Optional[list[str]] = None
+        na_values: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """Load a CSV file into a pandas DataFrame."""
 
@@ -24,7 +24,10 @@ def load_csv(
     
     except FileNotFoundError:
         raise FileNotFoundError("File not found")
-    #Need to add more excepts
+    except pd.errors.EmptyDataError:
+        raise ValueError("CSV file is empty")
+    except pd.errors.ParserError as e:
+        raise ValueError(f"Error parsing CSV file: {e}")
 
 
 def preview_dataframe(
@@ -53,7 +56,7 @@ def get_dataframe_stat_summary(
     }
     
 
-def set_column_names(df: pd.DataFrame, names: list[str]) -> pd.DataFrame:
+def set_column_names(df: pd.DataFrame, names: List[str]) -> pd.DataFrame:
     """Manually set column names in a DataFrame."""
     if df.shape[1] != len(names):
         raise ValueError("Number of names doesn't match")
