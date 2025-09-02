@@ -8,21 +8,7 @@ def load_csv(
         encoding: str = "utf-8",
         na_values: Optional[list[str]] = None
 ) -> pd.DataFrame:
-    """Load a CSV file into a pandas DataFrame.
-
-    Args:
-        filepath (str): _description_
-        sep (str, optional): _description_. Defaults to ",".
-        header (int | None, optional): _description_. Defaults to 0.
-        encoding (str, optional): _description_. Defaults to "utf-8".
-        na_values (list[str] | None, optional): _description_. Defaults to None.
-
-    Raises:
-        NotImplementedError: _description_
-
-    Returns:
-        pd.DataFrame: _description_
-    """
+    """Load a CSV file into a pandas DataFrame."""
 
     try:
         df = pd.read_csv(
@@ -46,20 +32,14 @@ def preview_dataframe(
         row_number,
         tail: bool = False
 ) -> pd.DataFrame:
-    """Return a preview of the DataFrame.
+    """Return a preview of the DataFrame."""
+    if(row_number <= 0):
+        raise ValueError("row_number cannot be <= 0")
+    if tail:
+        return df.tail(row_number)
+    else:
+        return df.head(row_number)
 
-    Args:
-        df (pd.DataFrame): _description_
-        row_number (_type_): _description_
-        tail (bool, optional): _description_. Defaults to False.
-
-    Raises:
-        NotImplementedError: _description_
-
-    Returns:
-        pd.DataFrame: _description_
-    """
-    raise NotImplementedError()
 
 
 def get_dataframe_stat_summary(
