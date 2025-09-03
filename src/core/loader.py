@@ -63,6 +63,7 @@ def set_column_names(df: pd.DataFrame, names: List[str]) -> pd.DataFrame:
     df.columns = names 
     return df
 
+
 def validate_csv_format(filepath: str, expected_cols: Optional[int] = None) -> bool:
     """Check basic integrity of a CSV file before loading."""
     try:
