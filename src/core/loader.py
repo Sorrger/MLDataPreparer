@@ -45,9 +45,7 @@ def preview_dataframe(
 
 
 
-def get_dataframe_stat_summary(
-        df: pd.DataFrame
-) -> Dict[str, object]:
+def get_dataframe_stat_summary(df: pd.DataFrame) -> Dict[str, object]:
     """Return summary statistics and structure of a DataFrame."""
     return {
         "row_count": df.shape[0],
