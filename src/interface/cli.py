@@ -7,7 +7,7 @@ from src.core.validator import validate_schema
 from src.core.exporter import export_to_csv, export_to_numpy
 
 
-def main():
+def runCLI():
     parser = argparse.ArgumentParser(
         description="MLDataPreparer CLI - load, process, validate, and export datasets."
     )
@@ -49,7 +49,7 @@ def main():
     elif args.command == "validate":
         df = load_csv(args.filepath)
         ok = validate_schema(df, args.columns)
-        print("Schema valid ✅" if ok else "Schema invalid ❌")
+        print("Schema valid" if ok else "Schema invalid")
 
     elif args.command == "export":
         df = load_csv(args.filepath)
@@ -58,3 +58,64 @@ def main():
         else:
             export_to_numpy(df, args.out)
         print(f"Data exported to {args.out} ({args.format})")
+
+
+
+def runMenu():
+    df = None
+    while True:
+        print("\n=== MLDataPreparer Menu ===")
+        print("1. Load CSV")
+        print("2. Drop columns")
+        print("3. Validate schema")
+        print("4. Export data")
+        print("5. Show preview")
+        print("0. Exit")
+
+        choice = input("Choose option: ")
+
+        if choice == "1":
+            path = input("Enter file path: ")
+            sep = input("Separator (default ,): ") or ","
+            df = load_csv(path, sep=sep)
+            print("Data loaded")
+
+        elif choice == "2":
+            if df is None:
+                print("Load data first")
+                continue
+            cols = input("Columns to drop (space separated): ").split()
+            df = drop_columns(df, cols)
+            print("Columns dropped")
+
+        elif choice == "3":
+            if df is None:
+                print("Load data first")
+                continue
+            cols = input("Enter expected columns (space separated): ").split()
+            ok = validate_schema(df, cols)
+            print("Schema valid" if ok else "Schema invalid")
+
+        elif choice == "4":
+            if df is None:
+                print("Load data first")
+                continue
+            out = input("Output file path: ")
+            fmt = input("Format (csv/npy): ").lower()
+            if fmt == "csv":
+                export_to_csv(df, out)
+            else:
+                export_to_numpy(df, out)
+            print(f"Exported to {out} ({fmt})")
+
+        elif choice == "5":
+            if df is not None:
+                print(df.head())
+            else:
+                print("No data loaded")
+
+        elif choice == "0":
+            break
+
+        else:
+            print("Invalid choice")
