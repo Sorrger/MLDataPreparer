@@ -95,11 +95,7 @@ def group_and_aggregate(
     by: Union[str, List[str]],
     agg_funcs: Dict[str, List[str]]
 ) -> pd.DataFrame:
-    """Group DataFrame by one or more columns and apply aggregation functions.
-
-    Example:
-        group_and_aggregate(df, by="category", agg_funcs={"value": ["mean", "sum"]})
-    """
+    """Group DataFrame by one or more columns and apply aggregation functions. """
     return df.groupby(by).agg(agg_funcs).reset_index()
 
 
