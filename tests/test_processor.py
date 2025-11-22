@@ -174,7 +174,6 @@ def test_rolling_stat_mean(simple_df):
 
 
 def test_filter_rows(simple_df):
-    """filter_rows"""
     df2 = filter_rows(simple_df, lambda row: row["a"] > 1)
     assert df2["a"].tolist() == [2, 3]
 

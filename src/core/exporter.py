@@ -40,3 +40,5 @@ def export_to_numpy(df: pd.DataFrame, filepath: str, columns: Optional[list[str]
     else:
         array = df.to_numpy()
     np.save(filepath, array)
+
+
