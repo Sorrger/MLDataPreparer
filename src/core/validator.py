@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Dict, List, Optional
+from typing import Dict, List, Set, Any, Optional
 
 
 def check_missing_values(df: pd.DataFrame) -> Dict[str, int]:
@@ -59,3 +59,14 @@ def validate_schema(df: pd.DataFrame, expected_columns: List[str]) -> bool:
             f"Schema mismatch. Expected: {expected_columns}, Found: {list(df.columns)}"
         )
     return True
+
+def validate_allowed_values(df: pd.DataFrame, column: str, allowed: Set[Any]) -> bool:
+    """Validate that values in `column` are within allowed set."""
+    if column not in df.columns:
+        raise KeyError(f"Column '{column}' not found in DataFrame.")
+    unique_vals = set(df[column].dropna().unique())
+    bad = unique_vals - set(allowed)
+    if bad:
+        raise ValueError(f"Column '{column}' contains values outside allowed set: {sorted(bad)}")
+    return True
+

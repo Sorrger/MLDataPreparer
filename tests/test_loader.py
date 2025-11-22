@@ -100,6 +100,23 @@ def test_load_csv_with_invalid_encoding(tmp_path):
     with pytest.raises(UnicodeDecodeError):
         load_csv(str(file), encoding="utf-8")
 
+def test_load_csv_no_header(tmp_path):
+    """load CSV without header."""
+    file = tmp_path / "noheader.csv"
+    file.write_text("Alice,30\nBob,25")
+
+    df = load_csv(str(file), header=None)
+    assert list(df.columns) == [0, 1]
+    assert df.shape == (2, 2)
+
+def test_load_csv_custom_na_values(tmp_path):
+    """load with NA values"""
+    file = tmp_path / "na.csv"
+    file.write_text("col\nNA\nmissing\n1")
+
+    df = load_csv(str(file), na_values=["NA", "missing"])
+    assert df.isna().sum().iloc[0] == 2
+
 
 # --- preview_dataframe tests --------------------------------------------------
 
@@ -127,6 +144,13 @@ def test_get_dataframe_stat_summary_returns_expected_keys(simple_df):
 
 
 # --- set_column_names tests --------------------------------------------------
+    """set_column_names with correct names"""
+def test_set_column_names_valid(simple_df):
+    df = simple_df.copy()
+    names = ["col1", "col2"]
+    df2 = set_column_names(df, names)
+    assert list(df2.columns) == names
+
 
 def test_set_column_names_updates_columns():
     """set_column_names should replace DataFrame column names with provided list."""
@@ -166,3 +190,20 @@ def test_validate_csv_format_with_no_expected_cols(tmp_path):
     file = tmp_path / "valid.csv"
     file.write_text("col1,col2\n1,2\n3,4")
     assert validate_csv_format(str(file))
+
+def test_validate_csv_format_inconsistent_rows(tmp_path):
+    """validate_csv_format detects inconsistent rows"""
+    file = tmp_path / "bad.csv"
+    file.write_text("a,b\n1,2\n3,4,5")
+
+    with pytest.raises(ValueError):
+        validate_csv_format(str(file), expected_cols=2)
+
+def test_validate_csv_format_empty_file(tmp_path):
+    """validate_csv_format empty file"""
+    file = tmp_path / "empty.csv"
+    file.write_text("")
+
+    with pytest.raises(ValueError):
+        validate_csv_format(str(file))
+

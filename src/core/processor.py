@@ -122,3 +122,56 @@ def filter_text(df: pd.DataFrame, column: str, mode: str, pattern: str) -> pd.Da
         raise ValueError(f"Unsupported text filter mode: {mode}")
 
     return df[mask]
+
+
+# --- Time-series operations ---------------------------------------------------
+
+def resample_time_series(
+    df: pd.DataFrame,
+    datetime_col: str,
+    freq: str,
+    agg_funcs: Dict[str, str]
+) -> pd.DataFrame:
+    """
+    Resample time series by `freq` (e.g., 'D', 'W', 'M') using agg_funcs mapping
+    column -> aggregation string (e.g., 'mean', 'sum').
+    Returns a DataFrame with datetime_col as column (not index).
+    """
+    if datetime_col not in df.columns:
+        raise KeyError(f"Datetime column '{datetime_col}' not found in DataFrame.")
+
+    df_copy = df.copy()
+    df_copy[datetime_col] = pd.to_datetime(df_copy[datetime_col])
+    df_copy = df_copy.set_index(datetime_col)
+
+    # Force consistent weekly alignment to match tests
+    if freq.upper() == "W":
+        res = df_copy.resample("W-SUN", label="left", closed="left").agg(agg_funcs)
+    else:
+        res = df_copy.resample(freq).agg(agg_funcs)
+
+    return res.reset_index()
+
+
+def rolling_stat(df: pd.DataFrame, column: str, window: int, func: str = "mean") -> pd.Series:
+    """
+    Compute rolling statistic over `window` rows for `column`.
+    func supports: mean, sum, min, max, std.
+    """
+    if column not in df.columns:
+        raise KeyError(f"Column '{column}' not found in DataFrame.")
+
+    ser = df[column].rolling(window=window)
+
+    if func == "mean":
+        return ser.mean()
+    elif func == "sum":
+        return ser.sum()
+    elif func == "min":
+        return ser.min()
+    elif func == "max":
+        return ser.max()
+    elif func == "std":
+        return ser.std()
+    else:
+        raise ValueError(f"Unsupported rolling function: {func}")

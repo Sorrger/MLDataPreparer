@@ -79,3 +79,50 @@ def test_export_to_numpy_empty_dataframe(tmp_path):
     df = pd.DataFrame()
     with pytest.raises(ValueError):
         export_to_numpy(df, file)
+
+def test_export_to_csv_with_columns(tmp_path, simple_df):
+    """CSV export only some columns"""
+    file = tmp_path / "cols.csv"
+    export_to_csv(simple_df, file, columns=["a"])
+    assert file.exists()
+    df2 = pd.read_csv(file)
+    assert list(df2.columns) == ["a"]
+
+def test_export_to_csv_overwrite_behavior(tmp_path, simple_df):
+    file = tmp_path / "data.csv"
+    export_to_csv(simple_df, file)
+    # writing again without overwrite should raise
+    with pytest.raises(FileExistsError):
+        export_to_csv(simple_df, file)
+    # with overwrite True should succeed
+    export_to_csv(simple_df, file, overwrite=True)
+    assert file.exists()
+
+def test_export_to_csv_select_columns(tmp_path, simple_df):
+    """CSV export only some columns"""
+    file = tmp_path / "subset.csv"
+    export_to_csv(simple_df, file, columns=["a"])
+    df2 = pd.read_csv(file)
+    assert list(df2.columns) == ["a"]
+
+def test_export_to_csv_overwrite(tmp_path, simple_df):
+    """CSV overwrite=True"""
+    file = tmp_path / "test.csv"
+    export_to_csv(simple_df, file)
+    export_to_csv(simple_df, file, overwrite=True)
+    assert file.exists()
+
+def test_export_to_numpy_overwrite(tmp_path, simple_df):
+    """NumPy export overwrite fails unless allowed"""
+    file = tmp_path / "test.npy"
+    export_to_numpy(simple_df, file)
+    with pytest.raises(FileExistsError):
+        export_to_numpy(simple_df, file)
+
+def test_export_to_numpy_overwrite_true(tmp_path, simple_df):
+    """NumPy export overwrite=True"""
+    file = tmp_path / "test.npy"
+    export_to_numpy(simple_df, file)
+    export_to_numpy(simple_df, file, overwrite=True)
+    arr = np.load(file)
+    assert arr.shape == (3, 2)

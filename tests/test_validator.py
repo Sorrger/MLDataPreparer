@@ -47,6 +47,10 @@ def test_validate_no_missing_raises(df_with_missing):
     with pytest.raises(ValueError):
         validator.validate_no_missing(df_with_missing)
 
+def test_validate_no_missing_subset(valid_df):
+    """validate_no_missing passes when selecting subset"""
+    assert validator.validate_no_missing(valid_df, ["id"])
+
 
 # --- validate_column_types tests ---------------------------------------------
 
@@ -55,13 +59,16 @@ def test_validate_column_types_with_correct_types(valid_df):
     expected_types = {"id": "int64", "age": "int64", "name": "object"}
     assert validator.validate_column_types(valid_df, expected_types)
 
-
 def test_validate_column_types_with_mismatch(valid_df):
     """validate_column_types should raise TypeError if dtype mismatches."""
     expected_types = {"id": "float64"}  # wrong type
     with pytest.raises(TypeError):
         validator.validate_column_types(valid_df, expected_types)
 
+def test_validate_column_types_missing_column(valid_df):
+    """validate_column_types missing column"""
+    with pytest.raises(KeyError):
+        validator.validate_column_types(valid_df, {"missing": "int64"})
 
 # --- validate_unique tests ---------------------------------------------------
 
@@ -107,3 +114,28 @@ def test_validate_schema_raises(valid_df):
     """validate_schema should raise ValueError when schema differs."""
     with pytest.raises(ValueError):
         validator.validate_schema(valid_df, ["id", "age"])
+
+def test_validate_allowed_values_passes(valid_df):
+    """validate_no_missing passes when selecting subset"""
+    assert validator.validate_allowed_values(valid_df, "name", {"Alice", "Bob", "Charlie"})
+
+def test_validate_allowed_values_raises(valid_df):
+    """"""
+    with pytest.raises(ValueError):
+        validator.validate_allowed_values(valid_df, "name", {"Alice", "Bob"})
+
+def test_validate_unique_multiple_columns():
+    """validate_unique multiple columns"""
+    df = pd.DataFrame({"id": [1, 2, 1], "code": [5, 5, 5]})
+    with pytest.raises(ValueError):
+        validator.validate_unique(df, ["id", "code"])
+
+def test_validate_value_ranges_upper_only(valid_df):
+    """validate_value_ranges only max bound"""
+    with pytest.raises(ValueError):
+        validator.validate_value_ranges(valid_df, "age", max_value=20)
+
+def test_validate_allowed_values_bad(valid_df):
+    """validate_allowed_values with unexpected values"""
+    with pytest.raises(ValueError):
+        validator.validate_allowed_values(valid_df, "name", {"Alice"})
