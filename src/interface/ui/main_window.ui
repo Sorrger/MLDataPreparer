@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="windowTitle">
+   <string>ML Data Preparer</string>
+  </property>
+
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+
+    <!-- LOAD CSV -->
+    <item>
+     <widget class="QPushButton" name="btnLoad">
+      <property name="text">
+       <string>Load CSV</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- PREVIEW HEAD -->
+    <item>
+     <widget class="QPushButton" name="btnPreviewHead">
+      <property name="text">
+       <string>Preview Head</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- PREVIEW TAIL -->
+    <item>
+     <widget class="QPushButton" name="btnPreviewTail">
+      <property name="text">
+       <string>Preview Tail</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- VALIDATE -->
+    <item>
+     <widget class="QPushButton" name="btnValidate">
+      <property name="text">
+       <string>Validate</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- EXPORT CSV -->
+    <item>
+     <widget class="QPushButton" name="btnExportCSV">
+      <property name="text">
+       <string>Export CSV</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- EXPORT NUMPY -->
+    <item>
+     <widget class="QPushButton" name="btnExportNumPy">
+      <property name="text">
+       <string>Export NumPy</string>
+      </property>
+     </widget>
+    </item>
+
+    <!-- TABLE -->
+    <item>
+     <widget class="QTableView" name="tableView"/>
+    </item>
+
+   </layout>
+  </widget>
+
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
