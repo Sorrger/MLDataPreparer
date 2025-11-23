@@ -1,3 +1,4 @@
+import os
 import typer
 import pandas as pd
 from rich import print
@@ -346,235 +347,328 @@ def export_npy_cmd(out: str, overwrite: bool = False):
 def runCLI():
     app()
 
+import os
 
-# -------------------------------------------------------------------------
-# INTERACTIVE MENU (full functionality)
-# -------------------------------------------------------------------------
-def safe_input_int(prompt: str, default=None):
-    """Ask for an integer safely, with optional default."""
-    val = input(prompt).strip()
-    if val == "" and default is not None:
-        return default
-    try:
-        return int(val)
-    except ValueError:
-        print("[red]Please enter a valid integer[/red]")
-        return None
+# ============================================================
+# SAFE INPUT HELPERS
+# ============================================================
 
-
-def safe_input_list(prompt: str, sep=","):
-    """Ask for list of items like 'a,b,c'."""
-    val = input(prompt).strip()
-    if not val:
-        print("[red]Input cannot be empty[/red]")
-        return None
-    return [x.strip() for x in val.split(sep)]
+def ask_int(prompt, allow_empty=False):
+    """Ask for integer with validation."""
+    while True:
+        val = input(prompt).strip()
+        if val == "" and allow_empty:
+            return None
+        try:
+            return int(val)
+        except ValueError:
+            print("[red]Please enter a valid integer[/red]")
 
 
-def ensure_loaded(df):
-    if df is None:
+def ask_list(prompt, sep=",", allow_empty=False):
+    """Ask for comma-separated list safely."""
+    while True:
+        val = input(prompt).strip()
+        if val == "" and allow_empty:
+            return None
+        if val == "":
+            print("[red]Input cannot be empty[/red]")
+            continue
+        return [v.strip() for v in val.split(sep)]
+
+
+def ensure_loaded():
+    if STATE["df"] is None:
         print("[red]Load data first[/red]")
         return False
     return True
 
+
+# ============================================================
+# LOAD MENU
+# ============================================================
+
+def menu_load():
+    while True:
+        print("\n--- LOAD DATA ---")
+        print("1. Load CSV file")
+        print("0. Back")
+
+        choice = input("Choose option: ").strip()
+
+        if choice == "0":
+            return
+
+        elif choice == "1":
+            while True:
+                path = input("Enter CSV path (ENTER to cancel): ").strip()
+                if path == "":
+                    print("[yellow]Canceled[/yellow]")
+                    break
+
+                if not os.path.exists(path):
+                    print("[red]File does not exist. Try again.[/red]")
+                    continue
+
+                sep = input("Separator (ENTER for ,): ").strip() or ","
+
+                try:
+                    df = load_csv(path, sep)
+                    STATE["df"] = df
+                    STATE["path"] = path
+                    print("[green]Loaded successfully[/green]")
+                    _show_df(df.head())
+                    break
+                except Exception as e:
+                    print(f"[red]Error:[/red] {e}")
+                    if input("Retry? (y/n): ").strip().lower() != "y":
+                        break
+
+
+# ============================================================
+# PREVIEW MENU
+# ============================================================
+
+def menu_preview():
+    if not ensure_loaded():
+        return
+
+    while True:
+        n = input("Rows to preview (ENTER for 5, or 'b' to go back): ").strip()
+        if n.lower() == "b":
+            return
+
+        n = int(n) if n else 5
+        try:
+            _show_df(preview_dataframe(STATE["df"], n))
+            return
+        except Exception as e:
+            print(f"[red]Error:[/red] {e}")
+
+
+# ============================================================
+# STATS MENU
+# ============================================================
+
+def menu_stats():
+    if not ensure_loaded():
+        return
+    try:
+        stats = get_dataframe_stat_summary(STATE["df"])
+        print("[cyan]Dataset Summary[/cyan]")
+        for k, v in stats.items():
+            print(f"[yellow]{k}:[/yellow] {v}")
+    except Exception as e:
+        print("[red]Error:[/red]", e)
+
+
+# ============================================================
+# PROCESSING MENU
+# ============================================================
+
+def menu_processing():
+    if not ensure_loaded():
+        return
+
+    while True:
+        print("\n--- PROCESSING ---")
+        print("1. Drop columns")
+        print("2. Drop rows by index")
+        print("3. Drop rows by condition")
+        print("4. Add column")
+        print("5. Text filter")
+        print("6. Group & aggregate")
+        print("0. Back")
+
+        sub = input("Choose option: ").strip()
+        if sub == "0":
+            return
+
+        try:
+            # -------------------
+            if sub == "1":
+                cols = ask_list("Columns to drop (comma): ")
+                STATE["df"] = drop_columns(STATE["df"], cols)
+                print("[green]Dropped[/green]")
+                _show_df(STATE["df"])
+
+            # -------------------
+            elif sub == "2":
+                idx = ask_list("Row indexes (comma): ")
+                idx = [int(i) for i in idx]
+                STATE["df"] = drop_rows_by_index(STATE["df"], idx)
+                print("[green]Rows removed[/green]")
+                _show_df(STATE["df"])
+
+            # -------------------
+            elif sub == "3":
+                col = input("Column: ").strip()
+                val = input("Value to match: ").strip()
+                STATE["df"] = drop_rows_by_condition(STATE["df"], lambda row: str(row[col]) == val)
+                print("[green]Rows removed[/green]")
+                _show_df(STATE["df"])
+
+            # -------------------
+            elif sub == "4":
+                name = input("New column name: ").strip()
+                vals = ask_list("Values (comma): ")
+                STATE["df"] = add_column(STATE["df"], name, vals)
+                print("[green]Column added[/green]")
+                _show_df(STATE["df"])
+
+            # -------------------
+            elif sub == "5":
+                col = input("Column: ").strip()
+                mode = input("Mode (contains / startswith / endswith): ").strip()
+                pat = input("Pattern: ").strip()
+                STATE["df"] = filter_text(STATE["df"], col, mode, pat)
+                print("[green]Filtered[/green]")
+                _show_df(STATE["df"])
+
+            # -------------------
+            elif sub == "6":
+                group_cols = ask_list("Group by (comma): ")
+                raw = ask_list("Aggregations (format col:sum,col2:mean): ")
+                agg = {k: [v] for k, v in (p.split(":") for p in raw)}
+                STATE["df"] = group_and_aggregate(STATE["df"], group_cols, agg)
+                print("[green]Grouped[/green]")
+                _show_df(STATE["df"])
+
+        except Exception as e:
+            print(f"[red]Error:[/red] {e}")
+
+
+# ============================================================
+# VALIDATION MENU
+# ============================================================
+
+def menu_validation():
+    if not ensure_loaded():
+        return
+
+    while True:
+        print("\n--- VALIDATION ---")
+        print("1. Schema check")
+        print("2. Unique check")
+        print("3. Missing values")
+        print("4. Value range")
+        print("5. Allowed values")
+        print("0. Back")
+
+        sub = input("Choose option: ").strip()
+
+        if sub == "0":
+            return
+
+        try:
+            if sub == "1":
+                cols = ask_list("Expected columns (comma): ")
+                print(validate_schema(STATE["df"], cols))
+
+            elif sub == "2":
+                cols = ask_list("Columns (comma): ")
+                validate_unique(STATE["df"], cols)
+                print("[green]Unique OK[/green]")
+
+            elif sub == "3":
+                cols = ask_list("Columns (comma, ENTER for all): ", allow_empty=True)
+                validate_no_missing(STATE["df"], cols)
+                print("[green]No missing[/green]")
+
+            elif sub == "4":
+                col = input("Column: ").strip()
+                minv = input("Min (ENTER skip): ").strip()
+                maxv = input("Max (ENTER skip): ").strip()
+
+                validate_value_ranges(
+                    STATE["df"], col,
+                    float(minv) if minv else None,
+                    float(maxv) if maxv else None
+                )
+                print("[green]Range OK[/green]")
+
+            elif sub == "5":
+                col = input("Column: ").strip()
+                allowed = set(ask_list("Allowed values (comma): "))
+                validate_allowed_values(STATE["df"], col, allowed)
+                print("[green]Allowed values OK[/green]")
+
+        except Exception as e:
+            print(f"[red]Error:[/red] {e}")
+
+
+# ============================================================
+# EXPORT MENU
+# ============================================================
+
+def menu_export():
+    if not ensure_loaded():
+        return
+
+    while True:
+        print("\n--- EXPORT ---")
+        print("1. Save CSV")
+        print("2. Save NumPy (.npy)")
+        print("0. Back")
+
+        sub = input("Choose option: ").strip()
+
+        if sub == "0":
+            return
+
+        try:
+            if sub == "1":
+                out = input("Output filename: ").strip()
+                export_to_csv(STATE["df"], out)
+                print("[green]Saved CSV[/green]")
+
+            elif sub == "2":
+                out = input("Output filename: ").strip()
+                export_to_numpy(STATE["df"], out)
+                print("[green]Saved NPY[/green]")
+
+        except Exception as e:
+            print(f"[red]Error:[/red] {e}")
+
+
+# ============================================================
+# MAIN MENU
+# ============================================================
 
 def runMenu():
     while True:
         print("\n=== MLDataPreparer Interactive Menu ===")
         print("1. Load CSV")
         print("2. Preview")
-        print("3. Stats")
-        print("4. PROCESSING")
-        print("5. VALIDATION")
-        print("6. EXPORT")
+        print("3. Stats summary")
+        print("4. Processing")
+        print("5. Validation")
+        print("6. Export")
         print("0. Exit")
 
         choice = input("Choose option: ").strip()
 
-        # --------------------------
-        # LOAD
-        # --------------------------
-        if choice == "1":
-            path = input("Enter CSV path: ").strip()
-            sep = input("Separator (default ,): ").strip() or ","
-            try:
-                df = load_csv(path, sep)
-                STATE["df"] = df
-                STATE["path"] = path
-                print(f"[green]Loaded {path}[/green]")
-                _show_df(df.head())
-            except Exception as e:
-                print(f"[red]Error:[/red] {e}")
-
-        # --------------------------
-        # PREVIEW
-        # --------------------------
-        elif choice == "2":
-            if not ensure_loaded(STATE["df"]):
-                continue
-            n = safe_input_int("Rows to preview (default 5): ", default=5)
-            if n is None:
-                continue
-            try:
-                _show_df(preview_dataframe(STATE["df"], n))
-            except Exception as e:
-                print(f"[red]Error:[/red] {e}")
-
-        # --------------------------
-        # STATS
-        # --------------------------
-        elif choice == "3":
-            if not ensure_loaded(STATE["df"]):
-                continue
-            try:
-                stats = get_dataframe_stat_summary(STATE["df"])
-                for k, v in stats.items():
-                    print(f"[yellow]{k}[/yellow]: {v}")
-            except Exception as e:
-                print(f"[red]Error:[/red] {e}")
-
-        # --------------------------
-        # PROCESSING SUB-MENU
-        # --------------------------
-        elif choice == "4":
-            if not ensure_loaded(STATE["df"]):
-                continue
-
-            print("\n--- PROCESSING ---")
-            print("1. Drop columns")
-            print("2. Drop rows")
-            print("3. Drop where condition")
-            print("4. Add column")
-            print("5. Text filter")
-            print("6. Group & aggregate")
-            print("0. Back")
-            sub = input("Choose option: ").strip()
-
-            try:
-                if sub == "1":
-                    cols = safe_input_list("Columns (comma): ")
-                    if cols:
-                        STATE["df"] = drop_columns(STATE["df"], cols)
-                        _show_df(STATE["df"])
-
-                elif sub == "2":
-                    idx = safe_input_list("Row indexes (comma): ")
-                    if idx:
-                        idx = [int(i) for i in idx]
-                        STATE["df"] = drop_rows_by_index(STATE["df"], idx)
-                        _show_df(STATE["df"])
-
-                elif sub == "3":
-                    col = input("Column: ").strip()
-                    val = input("Value to match: ").strip()
-                    STATE["df"] = drop_rows_by_condition(STATE["df"], lambda row: str(row[col]) == val)
-                    _show_df(STATE["df"])
-
-                elif sub == "4":
-                    name = input("New column name: ").strip()
-                    vals = safe_input_list("Values (comma): ")
-                    if vals:
-                        STATE["df"] = add_column(STATE["df"], name, vals)
-                        _show_df(STATE["df"])
-
-                elif sub == "5":
-                    col = input("Column: ").strip()
-                    mode = input("Mode (contains/startswith/endswith): ").strip()
-                    pat = input("Pattern: ").strip()
-                    STATE["df"] = filter_text(STATE["df"], col, mode, pat)
-                    _show_df(STATE["df"])
-
-                elif sub == "6":
-                    group_cols = safe_input_list("Group by (comma): ")
-                    metrics = safe_input_list("Agg (ex col:sum,col2:mean): ")
-                    agg = {k: [v] for k, v in (m.split(":") for m in metrics)}
-                    STATE["df"] = group_and_aggregate(STATE["df"], group_cols, agg)
-                    _show_df(STATE["df"])
-
-            except Exception as e:
-                print(f"[red]Error:[/red] {e}")
-
-        # --------------------------
-        # VALIDATION SUB-MENU
-        # --------------------------
-        elif choice == "5":
-            if not ensure_loaded(STATE["df"]):
-                continue
-
-            print("\n--- VALIDATION ---")
-            print("1. Schema check")
-            print("2. Unique check")
-            print("3. Missing values")
-            print("4. Value range")
-            print("5. Allowed values")
-            print("0. Back")
-            sub = input("Choose option: ").strip()
-
-            try:
-                if sub == "1":
-                    cols = safe_input_list("Expected columns (comma): ")
-                    print(validate_schema(STATE["df"], cols))
-
-                elif sub == "2":
-                    cols = safe_input_list("Columns (comma): ")
-                    validate_unique(STATE["df"], cols)
-                    print("[green]Unique OK[/green]")
-
-                elif sub == "3":
-                    cols = safe_input_list("Columns (optional, comma): ") or None
-                    validate_no_missing(STATE["df"], cols)
-                    print("[green]No missing[/green]")
-
-                elif sub == "4":
-                    col = input("Column: ")
-                    minv = input("Min (enter to skip): ")
-                    maxv = input("Max (enter to skip): ")
-                    validate_value_ranges(
-                        STATE["df"], col,
-                        float(minv) if minv else None,
-                        float(maxv) if maxv else None,
-                    )
-                    print("[green]Range OK[/green]")
-
-                elif sub == "5":
-                    col = input("Column: ")
-                    allowed = safe_input_list("Allowed values (comma): ")
-                    validate_allowed_values(STATE["df"], col, set(allowed))
-                    print("[green]Allowed OK[/green]")
-
-            except Exception as e:
-                print(f"[red]Error:[/red] {e}")
-
-        # --------------------------
-        # EXPORT SUB-MENU
-        # --------------------------
-        elif choice == "6":
-            if not ensure_loaded(STATE["df"]):
-                continue
-
-            print("\n--- EXPORT ---")
-            print("1. CSV")
-            print("2. NumPy .npy")
-            print("0. Back")
-            sub = input("Choose option: ").strip()
-
-            try:
-                if sub == "1":
-                    out = input("Output filename: ")
-                    export_to_csv(STATE["df"], out)
-                    print("[green]Saved[/green]")
-
-                elif sub == "2":
-                    out = input("Output filename: ")
-                    export_to_numpy(STATE["df"], out)
-                    print("[green]Saved[/green]")
-
-            except Exception as e:
-                print(f"[red]Error:[/red] {e}")
-
-        elif choice == "0":
+        if choice == "0":
             print("Bye!")
-            break
+            return
+
+        elif choice == "1":
+            menu_load()
+
+        elif choice == "2":
+            menu_preview()
+
+        elif choice == "3":
+            menu_stats()
+
+        elif choice == "4":
+            menu_processing()
+
+        elif choice == "5":
+            menu_validation()
+
+        elif choice == "6":
+            menu_export()
 
         else:
             print("[red]Invalid option[/red]")
