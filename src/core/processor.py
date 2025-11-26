@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from typing import List, Callable, Dict, Union
 
 
@@ -14,10 +15,19 @@ def drop_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
 
 def add_column(df: pd.DataFrame, name: str, values: List) -> pd.DataFrame:
     """Add a new column with provided values."""
-    if len(values) != len(df):
-        raise ValueError("Length of values does not match number of rows.")
-    df[name] = values
-    return df
+    n = len(df)
+    if len(values) == 0:
+        df[name] = np.nan
+        return df
+
+    if len(values) < n:
+        padded = values + [np.nan] * (n - len(values))
+        df[name] = padded
+        return df
+
+    if len(values) > n:
+        df[name] = values[:n]
+        return df
 
 
 def create_column_from_existing(
