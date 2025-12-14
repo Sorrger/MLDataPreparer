@@ -18,6 +18,7 @@ from src.interface.gui.dialogs.rolling_dialog import RollingDialog
 from src.interface.gui.dialogs.resample_dialog import ResampleDialog
 from src.interface.gui.dialogs.validation_dialog import ValidationDialog
 from src.interface.gui.dialogs.derived_column_dialog import DerivedColumnDialog
+from src.interface.gui.dialogs.preview_dialog import PreviewDialog
 
 
 
@@ -37,7 +38,6 @@ class MainWindow(QMainWindow):
         # UI widgets
         self.btnLoad = ui.findChild(QPushButton, "btnLoad")
         self.btnPreviewHead = ui.findChild(QPushButton, "btnPreviewHead")
-        self.btnPreviewTail = ui.findChild(QPushButton, "btnPreviewTail")
         self.btnValidate = ui.findChild(QPushButton, "btnValidate")
         self.btnExportCSV = ui.findChild(QPushButton, "btnExportCSV")
         self.btnExportNumPy = ui.findChild(QPushButton, "btnExportNumPy")
@@ -45,8 +45,7 @@ class MainWindow(QMainWindow):
 
         # Connect buttons
         self.btnLoad.clicked.connect(self.load_csv)
-        self.btnPreviewHead.clicked.connect(lambda: self.preview(False))
-        self.btnPreviewTail.clicked.connect(lambda: self.preview(True))
+        self.btnPreviewHead.clicked.connect(self.show_preview_dialog)
         self.btnValidate.clicked.connect(self.show_validation_dialog)
         self.btnExportCSV.clicked.connect(self.export_csv)
         self.btnExportNumPy.clicked.connect(self.export_numpy)
@@ -214,4 +213,19 @@ class MainWindow(QMainWindow):
         if dlg.exec():
             col, rule, op = dlg.get_data()
             df = self.controller.resample(col, rule, op)
+            self.tableView.setModel(PandasModel(df))
+
+    def show_preview_dialog(self):
+        if self.controller.df is None:
+            return
+
+        max_rows = len(self.controller.df)
+        dlg = PreviewDialog(self, max_rows)
+
+        if dlg.exec():
+            rows, mode = dlg.get_params()
+            df = self.controller.preview_rows(
+                rows,
+                tail=(mode == "tail")
+            )
             self.tableView.setModel(PandasModel(df))

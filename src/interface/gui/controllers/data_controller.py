@@ -66,8 +66,11 @@ class DataController:
 
         return df
 
-    def preview(self, n: int = 5, tail: bool = False) -> pd.DataFrame:
-        return preview_dataframe(self.df, n, tail)
+    def preview_rows(self, rows: int, tail: bool = False) -> pd.DataFrame:
+        if tail:
+            return self.df.tail(rows)
+        return self.df.head(rows)
+
 
     def stats(self) -> Dict[str, Any]:
         return get_dataframe_stat_summary(self.df)
