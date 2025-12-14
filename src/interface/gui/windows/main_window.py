@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile
+from PySide6.QtWidgets import QMenu
 
 from src.interface.gui.controllers.data_controller import DataController
 from src.interface.gui.models.pandas_model import PandasModel
@@ -11,10 +12,13 @@ from src.interface.gui.models.pandas_model import PandasModel
 # dialogs
 from src.interface.gui.dialogs.drop_columns_dialog import DropColumnsDialog
 from src.interface.gui.dialogs.add_column_dialog import AddColumnDialog
+from src.interface.gui.dialogs.expression_dialog import ExpressionDialog
 from src.interface.gui.dialogs.group_aggregate_dialog import GroupAggregateDialog
 from src.interface.gui.dialogs.rolling_dialog import RollingDialog
 from src.interface.gui.dialogs.resample_dialog import ResampleDialog
 from src.interface.gui.dialogs.validation_dialog import ValidationDialog
+from src.interface.gui.dialogs.derived_column_dialog import DerivedColumnDialog
+
 
 
 class MainWindow(QMainWindow):
@@ -57,13 +61,40 @@ class MainWindow(QMainWindow):
     # Toolbar Actions
     # -----------------------------------------------------
     def add_processing_actions(self):
+        act_undo = QAction("Undo", self)
+        act_undo.setShortcut("Ctrl+Z")
+        act_undo.triggered.connect(self.undo_action)
+        self.toolbar.addAction(act_undo)
+
+        act_redo = QAction("Redo", self)
+        act_redo.setShortcut("Ctrl+Y")
+        act_redo.triggered.connect(self.redo_action)
+        self.toolbar.addAction(act_redo)
+
+        self.toolbar.addSeparator()
         act_drop = QAction("Drop columns", self)
         act_drop.triggered.connect(self.show_drop_columns)
         self.toolbar.addAction(act_drop)
 
-        act_add = QAction("Add column", self)
-        act_add.triggered.connect(self.show_add_column)
-        self.toolbar.addAction(act_add)
+        act_add_col = QAction("Add column", self)
+        self.toolbar.addAction(act_add_col)
+
+        add_menu = QMenu(self)
+
+        act_add_values = QAction("From values", self)
+        act_add_values.triggered.connect(self.show_add_column)
+
+        act_add_expr = QAction("From expression", self)
+        act_add_expr.triggered.connect(self.show_add_column_expression)
+
+        act_add_math = QAction("From math (A + B)", self)
+        act_add_math.triggered.connect(self.show_add_column_math)
+
+        add_menu.addAction(act_add_values)
+        add_menu.addAction(act_add_expr)
+        add_menu.addAction(act_add_math)
+
+        act_add_col.setMenu(add_menu)
 
         act_group = QAction("Group & aggregate", self)
         act_group.triggered.connect(self.show_group_aggregate)
@@ -80,6 +111,18 @@ class MainWindow(QMainWindow):
     # -----------------------------------------------------
     # GUI Actions
     # -----------------------------------------------------
+    def undo_action(self):
+        df = self.controller.undo()
+        if df is not None:
+            self.tableView.setModel(PandasModel(df))
+
+
+    def redo_action(self):
+        df = self.controller.redo()
+        if df is not None:
+            self.tableView.setModel(PandasModel(df))
+
+
     def load_csv(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select CSV", "", "CSV (*.csv)")
         if not path:
@@ -131,9 +174,26 @@ class MainWindow(QMainWindow):
     def show_add_column(self):
         dlg = AddColumnDialog(self)
         if dlg.exec():
-            name, expr = dlg.get_data()
-            df = self.controller.add_column(name, expr)
+            name, values = dlg.get_data()
+            df = self.controller.add_column(name, values)
             self.tableView.setModel(PandasModel(df))
+
+
+    def show_add_column_expression(self):
+        dlg = ExpressionDialog(self, self.controller.df)
+        if dlg.exec():
+            name, expr = dlg.get_data()
+            df = self.controller.add_column_expression(name, expr)
+            self.tableView.setModel(PandasModel(df))
+
+
+    def show_add_column_math(self):
+        dlg = DerivedColumnDialog(self, self.controller.df)
+        if dlg.exec():
+            col1, col2, op, new_name = dlg.get_data()
+            df = self.controller.math_column(col1, col2, op, new_name)
+            self.tableView.setModel(PandasModel(df))
+
 
     def show_group_aggregate(self):
         dlg = GroupAggregateDialog(self, self.controller.df)

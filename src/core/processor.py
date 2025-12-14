@@ -29,6 +29,23 @@ def add_column(df: pd.DataFrame, name: str, values: List) -> pd.DataFrame:
         df[name] = values[:n]
         return df
 
+def add_column_from_expression(
+    df: pd.DataFrame,
+    new_name: str,
+    expression: str
+) -> pd.DataFrame:
+    """
+    Create new column using pandas expression.
+    Example expression: "(A + B) / 2"
+    """
+    try:
+        # allow numpy as np
+        local_ctx = {"np": np}
+        df[new_name] = df.eval(expression, engine="python", local_dict=local_ctx)
+        return df
+    except Exception as e:
+        raise ValueError(f"Invalid expression: {e}")
+
 
 def create_column_from_existing(
     df: pd.DataFrame, 
