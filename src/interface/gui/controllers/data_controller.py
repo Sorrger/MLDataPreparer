@@ -16,7 +16,7 @@ from src.core.processor import (
 )
 from src.core.validator import (
     validate_schema, validate_no_missing, validate_value_ranges,
-    validate_unique, validate_allowed_values, check_missing_values
+    validate_unique, validate_allowed_values, check_missing_values, data_quality_report
 )
 
 
@@ -168,6 +168,9 @@ class DataController:
 
     def missing_summary(self):
         return check_missing_values(self.df)
+    
+    def quality_report(self):
+        return data_quality_report(self.df)
 
     # -------------------------------------------------
     # Export

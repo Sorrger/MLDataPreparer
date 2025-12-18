@@ -70,3 +70,20 @@ def validate_allowed_values(df: pd.DataFrame, column: str, allowed: Set[Any]) ->
         raise ValueError(f"Column '{column}' contains values outside allowed set: {sorted(bad)}")
     return True
 
+def data_quality_report(df: pd.DataFrame) -> Dict[str, Any]:
+    missing = df.isna().sum()
+    missing_pct = (df.isna().mean() * 100).round(2)
+
+    return {
+        "rows": len(df),
+        "columns": len(df.columns),
+        "missing": missing.to_dict(),
+        "missing_pct": missing_pct.to_dict(),
+        "dtypes": df.dtypes.astype(str).to_dict(),
+        "unique": df.nunique().to_dict(),
+        "duplicates": int(df.duplicated().sum()),
+        "constant_columns": [
+            c for c in df.columns if df[c].nunique() <= 1
+        ],
+    }
+

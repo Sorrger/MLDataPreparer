@@ -16,7 +16,6 @@ from src.interface.gui.dialogs.expression_dialog import ExpressionDialog
 from src.interface.gui.dialogs.group_aggregate_dialog import GroupAggregateDialog
 from src.interface.gui.dialogs.rolling_dialog import RollingDialog
 from src.interface.gui.dialogs.resample_dialog import ResampleDialog
-from src.interface.gui.dialogs.validation_dialog import ValidationDialog
 from src.interface.gui.dialogs.derived_column_dialog import DerivedColumnDialog
 from src.interface.gui.dialogs.preview_dialog import PreviewDialog
 
@@ -136,14 +135,38 @@ class MainWindow(QMainWindow):
 
     # --- VALIDATION ---
     def show_validation_dialog(self):
-        dlg = ValidationDialog(self)
-        if dlg.exec():
-            kind, params = dlg.get_params()
-            msgs = self.controller.validate(kind, params)
-            if msgs:
-                QMessageBox.warning(self, "Validation errors", "\n".join(msgs))
-            else:
-                QMessageBox.information(self, "OK", "No issues found")
+        if self.controller.df is None:
+            QMessageBox.warning(self, "No data", "Load CSV first")
+            return
+
+        report = self.controller.quality_report()
+
+        lines = []
+        lines.append(f"Rows: {report['rows']}")
+        lines.append(f"Columns: {report['columns']}")
+        lines.append("")
+        lines.append("Missing values:")
+
+        for col, count in report["missing"].items():
+            pct = report["missing_pct"][col]
+            if count > 0:
+                lines.append(f"  {col}: {count} ({pct}%)")
+
+        lines.append("")
+        lines.append(f"Duplicate rows: {report['duplicates']}")
+
+        if report["constant_columns"]:
+            lines.append("")
+            lines.append("Constant columns:")
+            for col in report["constant_columns"]:
+                lines.append(f"  {col}")
+
+        QMessageBox.information(
+            self,
+            "Data quality report",
+            "\n".join(lines) if len(lines) > 5 else "No issues found"
+    )
+
 
     # -----------------------------------------------------
     # EXPORT
@@ -229,3 +252,5 @@ class MainWindow(QMainWindow):
                 tail=(mode == "tail")
             )
             self.tableView.setModel(PandasModel(df))
+
+    
