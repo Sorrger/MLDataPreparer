@@ -232,11 +232,12 @@ class MainWindow(QMainWindow):
             self.tableView.setModel(PandasModel(df))
 
     def show_resample(self):
-        dlg = ResampleDialog(self)
+        dlg = ResampleDialog(self, self.controller.df)
         if dlg.exec():
-            col, rule, op = dlg.get_data()
+            col, rule, op = dlg.get_params()
             df = self.controller.resample(col, rule, op)
             self.tableView.setModel(PandasModel(df))
+
 
     def show_preview_dialog(self):
         if self.controller.df is None:
