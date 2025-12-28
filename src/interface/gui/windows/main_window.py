@@ -18,7 +18,7 @@ from src.interface.gui.dialogs.rolling_dialog import RollingDialog
 from src.interface.gui.dialogs.resample_dialog import ResampleDialog
 from src.interface.gui.dialogs.derived_column_dialog import DerivedColumnDialog
 from src.interface.gui.dialogs.preview_dialog import PreviewDialog
-
+from src.interface.gui.dialogs.separator_dialog import SeparatorDialog
 
 
 class MainWindow(QMainWindow):
@@ -122,16 +122,23 @@ class MainWindow(QMainWindow):
 
 
     def load_csv(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select CSV", "", "CSV (*.csv)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Select CSV", "", "CSV (*.csv)"
+        )
         if not path:
             return
 
-        df = self.controller.load(path)
-        self.tableView.setModel(PandasModel(df))
+        dlg = SeparatorDialog(self)
+        if not dlg.exec():
+            return
 
-    def preview(self, tail=False):
-        df = self.controller.preview(10, tail)
-        self.tableView.setModel(PandasModel(df))
+        sep = dlg.get_separator()
+
+        try:
+            df = self.controller.load(path, sep=sep)
+            self.tableView.setModel(PandasModel(df))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     # --- VALIDATION ---
     def show_validation_dialog(self):
