@@ -220,7 +220,7 @@ class MainWindow(QMainWindow):
         dlg = DerivedColumnDialog(self, self.controller.df)
         if dlg.exec():
             col1, col2, op, new_name = dlg.get_data()
-            df = self.controller.math_column(col1, col2, op, new_name)
+            df = self.controller.add_derived_column(col1, col2, op, new_name)
             self.tableView.setModel(PandasModel(df))
 
 
