@@ -123,22 +123,43 @@ class MainWindow(QMainWindow):
 
     def load_csv(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Select CSV", "", "CSV (*.csv)"
+            self,
+            "Select data file",
+            "",
+            "Data files (*.csv *.npy);;CSV (*.csv);;NumPy (*.npy)"
         )
+
         if not path:
             return
 
-        dlg = SeparatorDialog(self)
-        if not dlg.exec():
-            return
-
-        sep = dlg.get_separator()
-
         try:
-            df = self.controller.load(path, sep=sep)
+            # --- CSV -----------------------------------------------------------
+            if path.lower().endswith(".csv"):
+                dlg = SeparatorDialog(self)
+                if not dlg.exec():
+                    return
+
+                sep = dlg.get_separator()
+                df = self.controller.load(path, sep=sep)
+
+            # --- NPY -----------------------------------------------------------
+            elif path.lower().endswith(".npy"):
+                df = self.controller.load(path)
+
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Unsupported file",
+                    "Only .csv and .npy files are supported"
+                )
+                return
+
             self.tableView.setModel(PandasModel(df))
+
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
+
+
 
     # --- VALIDATION ---
     def show_validation_dialog(self):

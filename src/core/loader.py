@@ -1,33 +1,60 @@
 from typing import Optional, Dict, List
 import pandas as pd
+import numpy as np
+
 
 def load_csv(
         filepath: str,
         sep: str = ",",
         header: Optional[int] = 0,
         encoding: str = "utf-8",
-        na_values: Optional[List[str]] = None
+        na_values: Optional[List[str]] = None,
+        npy_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
-    """Load a CSV file into a pandas DataFrame."""
-
+    """Load a CSV or NPY file into a pandas DataFrame."""
     try:
+        # --- OBSŁUGA NPY ----------------------------------------------------
+        if filepath.lower().endswith(".npy"):
+
+            # ⬇⬇⬇ KLUCZOWA POPRAWKA ⬇⬇⬇
+            try:
+                arr = np.load(filepath, allow_pickle=False)
+            except ValueError:
+                # object dtype → fallback
+                arr = np.load(filepath, allow_pickle=True)
+
+            if arr.size == 0:
+                raise ValueError("NPY file is empty")
+
+            if arr.ndim == 1:
+                arr = arr.reshape(-1, 1)
+
+            if npy_columns and len(npy_columns) != arr.shape[1]:
+                raise ValueError("Number of columns does not match array shape")
+
+            return pd.DataFrame(arr, columns=npy_columns)
+
+        # --- OBSŁUGA CSV ---------------------------------------------------
         df = pd.read_csv(
             filepath,
-            sep = sep,
-            header = header,
-            encoding = encoding,
-            na_values = na_values
+            sep=sep,
+            header=header,
+            encoding=encoding,
+            na_values=na_values
         )
+
         if df.empty:
             raise ValueError("CSV file is empty")
+
         return df
-    
+
     except FileNotFoundError:
         raise FileNotFoundError("File not found")
     except pd.errors.EmptyDataError:
         raise ValueError("CSV file is empty")
     except pd.errors.ParserError as e:
         raise ValueError(f"Error parsing CSV file: {e}")
+
 
 
 def preview_dataframe(

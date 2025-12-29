@@ -53,7 +53,7 @@
  <item row="0" column="0">
   <widget class="QPushButton" name="btnLoad">
    <property name="text">
-    <string>Load CSV</string>
+    <string>Load Data</string>
    </property>
   </widget>
  </item>
